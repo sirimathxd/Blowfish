@@ -62,7 +62,8 @@ void main() {
       List<int> encryptedSaltedECB = saltedBlowfish.encryptECB(plaintextBytes);
 
       // Decrypt with Salted ECB
-      List<int> decryptedSaltedECB = saltedBlowfish.decryptECB(encryptedSaltedECB);
+      List<int> decryptedSaltedECB =
+          saltedBlowfish.decryptECB(encryptedSaltedECB);
 
       expect(decryptedSaltedECB, plaintextBytes);
     });
@@ -72,10 +73,12 @@ void main() {
       Blowfish saltedBlowfish = newSaltedBlowfish(key, iv);
 
       // Encrypt with Salted CBC
-      List<int> encryptedSaltedCBC = saltedBlowfish.encryptCBC(plaintextBytes, iv);
+      List<int> encryptedSaltedCBC =
+          saltedBlowfish.encryptCBC(plaintextBytes, iv);
 
       // Decrypt with Salted CBC
-      List<int> decryptedSaltedCBC = saltedBlowfish.decryptCBC(encryptedSaltedCBC, iv);
+      List<int> decryptedSaltedCBC =
+          saltedBlowfish.decryptCBC(encryptedSaltedCBC, iv);
 
       expect(decryptedSaltedCBC, plaintextBytes);
     });

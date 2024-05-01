@@ -17,8 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 class BlowfishConstants {
-
-  //return copy 
+  //return copy
   static List<int> get p => List<int>.from(_p);
   static List<int> get s0 => List<int>.from(_s0);
   static List<int> get s1 => List<int>.from(_s1);

@@ -20,7 +20,7 @@ import 'dart:convert';
 import 'package:blowfish/blowfish.dart';
 
 void main() {
-  // Example key 
+  // Example key
   List<int> key = utf8.encode("mysecretpassword");
 
   // Plaintext
@@ -56,5 +56,4 @@ void main() {
 
   decrypted = saltedBlowfish.decryptECB(encrypted);
   print("Decrypted Salted: $decrypted");
-
 }

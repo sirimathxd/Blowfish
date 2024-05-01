@@ -1,7 +1,9 @@
 name: blowfish
 description: Blowfish encryption algorithm implementation in Dart with both ECB and CBC modes.
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+repository: https://github.com/sirimathxd/Blowfish
+homepage: https://github.com/sirimathxd/Blowfish
+issue_tracker: https://github.com/sirimathxd/Blowfish/issues
 
 environment:
   sdk: ^3.3.1
