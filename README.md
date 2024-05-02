@@ -1,7 +1,7 @@
 # Blowfish
 
 <p align="center">
-<a href="https://pub.dev/packages/blowfish_ecb"><img src="https://img.shields.io/pub/v/blowfish" alt="pub: blowfish"></a>
+<a href="https://pub.dev/packages/blowfish"><img src="https://img.shields.io/pub/v/blowfish" alt="pub: blowfish"></a>
 <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-AGPL v3.0-green.svg" alt="License: AGPL"></a>
 <a href="https://pub.dev/packages/lint"><img src="https://img.shields.io/badge/style-lint-4BC0F5.svg" alt="style: lint"></a>
 </p>
