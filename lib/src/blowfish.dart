@@ -27,153 +27,148 @@ class Blowfish {
   final List<int> s2 = BlowfishConstants.s2;
   final List<int> s3 = BlowfishConstants.s3;
 
-  List<int> encryptCBC(List<int> src, List<int> iv) {
-    // Check if the IV length is valid
-    if (iv.length != blocksize) {
-      throw ArgumentError('IV length must match block size');
+  /// Adds PKCS#7 padding to the input data.
+  List<int> _addPadding(List<int> src) {
+    int paddingLength = blocksize - (src.length % blocksize);
+    return src + List<int>.filled(paddingLength, paddingLength);
+  }
+
+  /// Removes PKCS#7 padding from the input data.
+  List<int> _removePadding(List<int> src) {
+    if (src.isEmpty) return src;
+
+    int paddingLength = src.last;
+    if (paddingLength < 1 || paddingLength > blocksize) {
+      throw ArgumentError('Invalid padding length');
     }
+    return src.sublist(0, src.length - paddingLength);
+  }
+
+  /// Encrypts data using CBC mode.
+  List<int> encryptCBC(List<int> src, List<int> iv, {bool applyPadding = false}) {
+    _validateIV(iv);
+
+    if (applyPadding) {
+      src = _addPadding(src);
+    } else {
+      _validateBlockSize(src);
+    }
+
     List<int> dst = [];
     int numBlocks = src.length ~/ blocksize;
     List<int> previousBlock = List<int>.from(iv);
 
     for (int i = 0; i < numBlocks; i++) {
       List<int> block = src.sublist(i * blocksize, (i + 1) * blocksize);
-
-      for (int j = 0; j < blocksize; j++) {
-        block[j] ^= previousBlock[j];
-      }
-
-      List<int> encryptedBlock = encryptECB(block);
-
+      _xorBlocks(block, previousBlock);
+      List<int> encryptedBlock = encryptECB(block, applyPadding: false);
       previousBlock = List<int>.from(encryptedBlock);
-
       dst.addAll(encryptedBlock);
     }
     return dst;
   }
 
-  List<int> decryptCBC(List<int> src, List<int> iv) {
-    // Check if the IV length is valid
-    if (iv.length != blocksize) {
-      throw ArgumentError('IV length must match block size');
-    }
+  /// Decrypts data using CBC mode.
+  List<int> decryptCBC(List<int> src, List<int> iv, {bool applyPadding = false}) {
+    _validateIV(iv);
+
+    _validateBlockSize(src);
+
     List<int> dst = [];
     int numBlocks = src.length ~/ blocksize;
     List<int> previousBlock = List<int>.from(iv);
 
     for (int i = 0; i < numBlocks; i++) {
       List<int> block = src.sublist(i * blocksize, (i + 1) * blocksize);
-      List<int> decryptedBlock = decryptECB(block);
-
-      for (int j = 0; j < blocksize; j++) {
-        decryptedBlock[j] ^= previousBlock[j];
-      }
-
+      List<int> decryptedBlock = decryptECB(block, applyPadding: false);
+      _xorBlocks(decryptedBlock, previousBlock);
       previousBlock = List<int>.from(block);
-
       dst.addAll(decryptedBlock);
     }
-    return dst;
+
+    return applyPadding ? _removePadding(dst) : dst;
   }
 
-  List<int> encryptECB(List<int> src) {
-    if (src.length != blocksize) {
-      throw ArgumentError('Invalid block size ${src.length}');
-    }
-    int l = (src[0] << 24) | (src[1] << 16) | (src[2] << 8) | src[3];
-    int r = (src[4] << 24) | (src[5] << 16) | (src[6] << 8) | src[7];
-    List<int> encrypted = encryptBlock(l, r, this);
-    return [
-      (encrypted[0] >> 24) & 0xFF,
-      (encrypted[0] >> 16) & 0xFF,
-      (encrypted[0] >> 8) & 0xFF,
-      encrypted[0] & 0xFF,
-      (encrypted[1] >> 24) & 0xFF,
-      (encrypted[1] >> 16) & 0xFF,
-      (encrypted[1] >> 8) & 0xFF,
-      encrypted[1] & 0xFF
-    ];
-  }
+  /// Encrypts data using ECB mode.
+  List<int> encryptECB(List<int> src, {bool applyPadding = true}) {
 
-  List<int> decryptECB(List<int> src) {
-    if (src.length != blocksize) {
-      throw ArgumentError('Invalid block size ${src.length}');
+    if (applyPadding) {
+      src = _addPadding(src);
+    } else {
+      _validateBlockSize(src);
     }
-    int l = (src[0] << 24) | (src[1] << 16) | (src[2] << 8) | src[3];
-    int r = (src[4] << 24) | (src[5] << 16) | (src[6] << 8) | src[7];
-    List<int> decrypted = decryptBlock(l, r, this);
-    return [
-      (decrypted[0] >> 24) & 0xFF,
-      (decrypted[0] >> 16) & 0xFF,
-      (decrypted[0] >> 8) & 0xFF,
-      decrypted[0] & 0xFF,
-      (decrypted[1] >> 24) & 0xFF,
-      (decrypted[1] >> 16) & 0xFF,
-      (decrypted[1] >> 8) & 0xFF,
-      decrypted[1] & 0xFF
-    ];
-  }
 
-  //just add dunno if it usefull or not :\
-  List<int> encryptECBL(List<int> src) {
-    if (src.length % blocksize != 0) {
-      // just add loop so u can enc more than 8 block :/
-      throw ArgumentError('Invalid block size');
-    }
     int blockCount = src.length ~/ blocksize;
     List<int> dst = [];
+
     for (int i = 0; i < blockCount; i++) {
-      int l = (src[i * blocksize] << 24) |
-          (src[i * blocksize + 1] << 16) |
-          (src[i * blocksize + 2] << 8) |
-          src[i * blocksize + 3];
-      int r = (src[i * blocksize + 4] << 24) |
-          (src[i * blocksize + 5] << 16) |
-          (src[i * blocksize + 6] << 8) |
-          src[i * blocksize + 7];
+      int l = _bytesToInt(src, i * blocksize);
+      int r = _bytesToInt(src, i * blocksize + 4);
       List<int> encrypted = encryptBlock(l, r, this);
-      dst.addAll([
-        (encrypted[0] >> 24) & 0xFF,
-        (encrypted[0] >> 16) & 0xFF,
-        (encrypted[0] >> 8) & 0xFF,
-        encrypted[0] & 0xFF,
-        (encrypted[1] >> 24) & 0xFF,
-        (encrypted[1] >> 16) & 0xFF,
-        (encrypted[1] >> 8) & 0xFF,
-        encrypted[1] & 0xFF
-      ]);
+
+      dst.addAll(_intToBytes(encrypted[0]));
+      dst.addAll(_intToBytes(encrypted[1]));
     }
+
     return dst;
   }
 
-  List<int> decryptECBL(List<int> src) {
-    if (src.length % blocksize != 0) {
-      throw ArgumentError('Invalid block size');
-    }
+  /// Decrypts data using ECB mode.
+  List<int> decryptECB(List<int> src, {bool applyPadding = true}) {
+    _validateBlockSize(src);
+
     int blockCount = src.length ~/ blocksize;
     List<int> dst = [];
+
     for (int i = 0; i < blockCount; i++) {
-      int l = (src[i * blocksize] << 24) |
-          (src[i * blocksize + 1] << 16) |
-          (src[i * blocksize + 2] << 8) |
-          src[i * blocksize + 3];
-      int r = (src[i * blocksize + 4] << 24) |
-          (src[i * blocksize + 5] << 16) |
-          (src[i * blocksize + 6] << 8) |
-          src[i * blocksize + 7];
+      int l = _bytesToInt(src, i * blocksize);
+      int r = _bytesToInt(src, i * blocksize + 4);
       List<int> decrypted = decryptBlock(l, r, this);
-      dst.addAll([
-        (decrypted[0] >> 24) & 0xFF,
-        (decrypted[0] >> 16) & 0xFF,
-        (decrypted[0] >> 8) & 0xFF,
-        decrypted[0] & 0xFF,
-        (decrypted[1] >> 24) & 0xFF,
-        (decrypted[1] >> 16) & 0xFF,
-        (decrypted[1] >> 8) & 0xFF,
-        decrypted[1] & 0xFF
-      ]);
+
+      dst.addAll(_intToBytes(decrypted[0]));
+      dst.addAll(_intToBytes(decrypted[1]));
     }
-    return dst;
+
+    return applyPadding ? _removePadding(dst) : dst;
+  }
+
+  /// Validates the IV length.
+  void _validateIV(List<int> iv) {
+    if (iv.length != blocksize) {
+      throw ArgumentError('IV length must match block size ($blocksize bytes)');
+    }
+  }
+
+  /// Validates the block size.
+  void _validateBlockSize(List<int> src) {
+    if (src.length % blocksize != 0) {
+      throw ArgumentError('Invalid block size: Block size must be a multiple of 8 bytes when padding is disabled');
+    }
+  }
+
+  /// XORs two blocks.
+  void _xorBlocks(List<int> block, List<int> previousBlock) {
+    for (int j = 0; j < blocksize; j++) {
+      block[j] ^= previousBlock[j];
+    }
+  }
+
+  /// Converts a list of bytes to an integer.
+  int _bytesToInt(List<int> src, int offset) {
+    return (src[offset] << 24) |
+           (src[offset + 1] << 16) |
+           (src[offset + 2] << 8) |
+           src[offset + 3];
+  }
+
+  /// Converts an integer to a list of bytes.
+  List<int> _intToBytes(int value) {
+    return [
+      (value >> 24) & 0xFF,
+      (value >> 16) & 0xFF,
+      (value >> 8) & 0xFF,
+      value & 0xFF
+    ];
   }
 }
 
@@ -197,7 +192,7 @@ Blowfish newBlowfish(List<int> key) {
   return result;
 }
 
-Blowfish newSaltedBlowfish(List<int> key, List<int> salt) {
+Blowfish newSaltedBlowfish(List<int> key, List<int> salt, {bool usePadding = true}) {
   if (salt.isEmpty) {
     return newBlowfish(key);
   }

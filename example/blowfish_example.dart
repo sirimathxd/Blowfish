@@ -23,6 +23,9 @@ void main() {
   // Example key
   List<int> key = utf8.encode("mysecretpassword");
 
+  // Apply padding
+  bool applyPadding = false;
+
   // Plaintext
   String plaintext = "testtext";
   List<int> plaintextBytes = utf8.encode(plaintext);
@@ -33,27 +36,27 @@ void main() {
   Blowfish blowfish = newBlowfish(key);
 
   // Encrypt
-  List<int> encrypted = blowfish.encryptECB(plaintextBytes);
+  List<int> encrypted = blowfish.encryptECB(plaintextBytes, applyPadding: applyPadding);
   print("Encrypted ECB: $encrypted");
 
   // Decrypt
-  List<int> decrypted = blowfish.decryptECB(encrypted);
+  List<int> decrypted = blowfish.decryptECB(encrypted, applyPadding: applyPadding);
 
   print("Decrypted ECB: $decrypted");
 
   // Encrypt with CBC
-  encrypted = blowfish.encryptCBC(plaintextBytes, utf8.encode("12345678"));
+  encrypted = blowfish.encryptCBC(plaintextBytes, utf8.encode("12345678") ,applyPadding: applyPadding);
   print("Encrypted CBC: $encrypted");
 
   // Decrypt with CBC
-  decrypted = blowfish.decryptCBC(encrypted, utf8.encode("12345678"));
+  decrypted = blowfish.decryptCBC(encrypted, utf8.encode("12345678"), applyPadding: applyPadding);
   print("Decrypted CBC: $decrypted");
 
   // newSaltedBlowfish
   Blowfish saltedBlowfish = newSaltedBlowfish(key, utf8.encode("12345678"));
-  encrypted = saltedBlowfish.encryptECB(plaintextBytes);
+  encrypted = saltedBlowfish.encryptECB(plaintextBytes ,applyPadding: applyPadding);
   print("Encrypted Salted: $encrypted");
 
-  decrypted = saltedBlowfish.decryptECB(encrypted);
+  decrypted = saltedBlowfish.decryptECB(encrypted, applyPadding: applyPadding);
   print("Decrypted Salted: $decrypted");
 }
